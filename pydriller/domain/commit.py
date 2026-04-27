@@ -137,14 +137,7 @@ class Method:
         :param dmm_prop: Property according to which this method is considered risky.
         :return: True if and only if the method is considered low-risk w.r.t. this property.
         """
-        if dmm_prop is DMMProperty.UNIT_SIZE:
-            return self.nloc <= Method.UNIT_SIZE_LOW_RISK_THRESHOLD
-        if dmm_prop is DMMProperty.UNIT_COMPLEXITY:
-            return self.complexity <= Method.UNIT_COMPLEXITY_LOW_RISK_THRESHOLD
-        assert dmm_prop is DMMProperty.UNIT_INTERFACING
-        return (
-                len(self.parameters) <= Method.UNIT_INTERFACING_LOW_RISK_THRESHOLD
-        )
+        pass
 
 
 class ModifiedFile:
@@ -181,60 +174,37 @@ class ModifiedFile:
 
     @property
     def change_type(self) -> ModificationType:
-        return self._from_change_to_modification_type(self._c_diff)
+        pass
 
     @staticmethod
     def _from_change_to_modification_type(diff: Diff) -> ModificationType:
-        if diff.new_file:
-            return ModificationType.ADD
-        if diff.deleted_file:
-            return ModificationType.DELETE
-        if diff.renamed_file:
-            return ModificationType.RENAME
-        if diff.a_blob and diff.b_blob and diff.a_blob != diff.b_blob:
-            return ModificationType.MODIFY
-
-        return ModificationType.UNKNOWN
+        pass
 
     @property
     def diff(self) -> str:
-        return self._get_decoded_str(self._c_diff.diff) or ''
+        pass
 
     def _get_decoded_str(self, diff: Union[str, bytes, None]) -> Optional[str]:
-        try:
-            if isinstance(diff, bytes):
-                return diff.decode("utf-8", "ignore")
-            if isinstance(diff, str):
-                return diff
-            return None
-        except (AttributeError, ValueError):
-            logger.debug(f"Could not load the diff of file {self.filename}")
-            return None
+        pass
 
     @property
     def content(self) -> Optional[bytes]:
-        return self._get_undecoded_content(self._c_diff.b_blob)
+        pass
 
     @property
     def content_before(self) -> Optional[bytes]:
-        return self._get_undecoded_content(self._c_diff.a_blob)
+        pass
 
     def _get_undecoded_content(self, blob: Optional[IndexObject]) -> Optional[bytes]:
-        return blob.data_stream.read() if blob is not None else None
+        pass
 
     @property
     def source_code(self) -> Optional[str]:
-        if self.content and isinstance(self.content, bytes):
-            return self._get_decoded_content(self.content)
-
-        return None
+        pass
 
     @property
     def source_code_before(self) -> Optional[str]:
-        if self.content_before and isinstance(self.content_before, bytes):
-            return self._get_decoded_content(self.content_before)
-
-        return None
+        pass
 
     @property
     def added_lines(self) -> int:
@@ -243,11 +213,7 @@ class ModifiedFile:
 
         :return: int lines_added
         """
-        added_lines = 0
-        for line in self.diff.replace("\r", "").split("\n"):
-            if line.startswith("+") and not line.startswith("+++"):
-                added_lines += 1
-        return added_lines
+        pass
 
     @property
     def deleted_lines(self) -> int:
@@ -256,11 +222,7 @@ class ModifiedFile:
 
         :return: int lines_deleted
         """
-        deleted_lines = 0
-        for line in self.diff.replace("\r", "").split("\n"):
-            if line.startswith("-") and not line.startswith("---"):
-                deleted_lines += 1
-        return deleted_lines
+        pass
 
     @property
     def old_path(self) -> Optional[str]:
@@ -269,9 +231,7 @@ class ModifiedFile:
 
         :return: str old_path
         """
-        if self._c_diff.a_path:
-            return str(Path(self._c_diff.a_path))
-        return None
+        pass
 
     @property
     def new_path(self) -> Optional[str]:
@@ -280,9 +240,7 @@ class ModifiedFile:
 
         :return: str new_path
         """
-        if self._c_diff.b_path:
-            return str(Path(self._c_diff.b_path))
-        return None
+        pass
 
     @property
     def filename(self) -> str:
@@ -293,13 +251,7 @@ class ModifiedFile:
 
         :return: str filename
         """
-        if self.new_path is not None and self.new_path != "/dev/null":
-            path = self.new_path
-        else:
-            assert self.old_path
-            path = self.old_path
-
-        return Path(path).name
+        pass
 
     @property
     def language_supported(self) -> bool:
@@ -310,7 +262,7 @@ class ModifiedFile:
 
         :return: True iff language of this Modification can be analyzed.
         """
-        return lizard_languages.get_reader_for(self.filename) is not None
+        pass
 
     @property
     def nloc(self) -> Optional[int]:
@@ -319,8 +271,7 @@ class ModifiedFile:
 
         :return: LOC of the file
         """
-        self._calculate_metrics()
-        return self._nloc
+        pass
 
     @property
     def complexity(self) -> Optional[int]:
@@ -329,8 +280,7 @@ class ModifiedFile:
 
         :return: Cyclomatic Complexity of the file
         """
-        self._calculate_metrics()
-        return self._complexity
+        pass
 
     @property
     def token_count(self) -> Optional[int]:
@@ -339,8 +289,7 @@ class ModifiedFile:
 
         :return: token count
         """
-        self._calculate_metrics()
-        return self._token_count
+        pass
 
     @property
     def diff_parsed(self) -> Dict[str, List[Tuple[int, str]]]:
@@ -353,47 +302,11 @@ class ModifiedFile:
 
         :return: Dictionary
         """
-        lines = self.diff.split("\n")
-        modified_lines = {
-            "added": [],
-            "deleted": [],
-        }  # type: Dict[str, List[Tuple[int, str]]]
-
-        count_deletions = 0
-        count_additions = 0
-
-        for line in lines:
-            line = line.rstrip()
-            count_deletions += 1
-            count_additions += 1
-
-            if line.startswith("@@"):
-                count_deletions, count_additions = self._get_line_numbers(line)
-
-            if line.startswith("-"):
-                modified_lines["deleted"].append((count_deletions, line[1:]))
-                count_additions -= 1
-
-            if line.startswith("+"):
-                modified_lines["added"].append((count_additions, line[1:]))
-                count_deletions -= 1
-
-            if line == r"\ No newline at end of file":
-                count_deletions -= 1
-                count_additions -= 1
-
-        return modified_lines
+        pass
 
     @staticmethod
     def _get_line_numbers(line: str) -> Tuple[int, int]:
-        token = line.split(" ")
-        numbers_old_file = token[1]
-        numbers_new_file = token[2]
-        delete_line_number = (
-                int(numbers_old_file.split(",")[0].replace("-", "")) - 1
-        )
-        additions_line_number = int(numbers_new_file.split(",")[0]) - 1
-        return delete_line_number, additions_line_number
+        pass
 
     @property
     def methods(self) -> List[Method]:
@@ -404,8 +317,7 @@ class ModifiedFile:
 
         :return: list of methods
         """
-        self._calculate_metrics()
-        return self._function_list
+        pass
 
     @property
     def methods_before(self) -> List[Method]:
@@ -416,8 +328,7 @@ class ModifiedFile:
 
         :return: list of methods
         """
-        self._calculate_metrics(include_before=True)
-        return self._function_list_before
+        pass
 
     @property
     def changed_methods(self) -> List[Method]:
@@ -428,25 +339,7 @@ class ModifiedFile:
 
         :return: list of methods
         """
-        new_methods = self.methods
-        old_methods = self.methods_before
-        added = self.diff_parsed["added"]
-        deleted = self.diff_parsed["deleted"]
-
-        methods_changed_new = {
-            y
-            for x in added
-            for y in new_methods
-            if y.start_line <= x[0] <= y.end_line
-        }
-        methods_changed_old = {
-            y
-            for x in deleted
-            for y in old_methods
-            if y.start_line <= x[0] <= y.end_line
-        }
-
-        return list(methods_changed_new.union(methods_changed_old))
+        pass
 
     @staticmethod
     def _risk_profile(
@@ -462,9 +355,7 @@ class ModifiedFile:
         :param dmm_prop: Property indicating the type of risk
         :return: total risk profile for methods according to property.
         """
-        low = sum([m.nloc for m in methods if m.is_low_risk(dmm_prop)])
-        high = sum([m.nloc for m in methods if not m.is_low_risk(dmm_prop)])
-        return low, high
+        pass
 
     def _delta_risk_profile(self, dmm_prop: DMMProperty) -> Tuple[int, int]:
         """
@@ -475,49 +366,17 @@ class ModifiedFile:
         :param dmm_prop: Property indicating the type of risk
         :return: total delta risk profile for this property.
         """
-        assert self.language_supported
-        low_before, high_before = self._risk_profile(
-            self.methods_before, dmm_prop
-        )
-        low_after, high_after = self._risk_profile(self.methods, dmm_prop)
-        return low_after - low_before, high_after - high_before
+        pass
 
     def _calculate_metrics(self, include_before: bool = False) -> None:
         """
         :param include_before: either to compute the metrics
         for source_code_before, i.e. before the change happened
         """
-        if not self.language_supported:
-            return
-
-        if self.source_code and self._nloc is None:
-            analysis = lizard.analyze_file.analyze_source_code(
-                self.filename, self.source_code
-            )
-            self._nloc = analysis.nloc
-            self._complexity = analysis.CCN
-            self._token_count = analysis.token_count
-
-            for func in analysis.function_list:
-                self._function_list.append(Method(func))
-
-        if (
-                include_before
-                and self.source_code_before
-                and not self._function_list_before
-        ):
-            anal = lizard.analyze_file.analyze_source_code(
-                self.filename, self.source_code_before
-            )
-
-            self._function_list_before = [Method(x) for x in anal.function_list]
+        pass
 
     def _get_decoded_content(self, content: bytes) -> Optional[str]:
-        try:
-            return content.decode("utf-8", "ignore")
-        except (AttributeError, ValueError):
-            logger.debug("Could not load the content for file %s", self.filename)
-            return None
+        pass
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ModifiedFile):
@@ -564,7 +423,7 @@ class Commit:
 
         :return: str hash
         """
-        return self._c_object.hexsha
+        pass
 
     @property
     def author(self) -> Developer:
@@ -573,9 +432,7 @@ class Commit:
 
         :return: author
         """
-        return self._conf.get("developer_factory").get_developer(
-            self._c_object.author.name, self._c_object.author.email
-        )
+        pass
 
     @property
     def co_authors(self) -> List[Developer]:
@@ -584,14 +441,7 @@ class Commit:
 
         :return: List[Developer] author
         """
-        co_authors = []
-        for co_author in self._c_object.co_authors:
-            d = self._conf.get("developer_factory").get_developer(
-                co_author.name, co_author.email
-            )
-            co_authors.append(d)
-
-        return co_authors
+        pass
 
     @property
     def committer(self) -> Developer:
@@ -600,9 +450,7 @@ class Commit:
 
         :return: committer
         """
-        return self._conf.get("developer_factory").get_developer(
-            self._c_object.committer.name, self._c_object.committer.email
-        )
+        pass
 
     @property
     def project_name(self) -> str:
@@ -611,7 +459,7 @@ class Commit:
 
         :return: project name
         """
-        return Path(self._conf.get("path_to_repo")).name
+        pass
 
     @property
     def project_path(self) -> str:
@@ -620,7 +468,7 @@ class Commit:
 
         :return: project path
         """
-        return str(Path(self._conf.get("path_to_repo")))
+        pass
 
     @property
     def author_date(self) -> datetime:
@@ -629,7 +477,7 @@ class Commit:
 
         :return: datetime author_datetime
         """
-        return self._c_object.authored_datetime
+        pass
 
     @property
     def committer_date(self) -> datetime:
@@ -638,7 +486,7 @@ class Commit:
 
         :return: datetime committer_datetime
         """
-        return self._c_object.committed_datetime
+        pass
 
     @property
     def author_timezone(self) -> int:
@@ -647,7 +495,7 @@ class Commit:
 
         :return: int timezone
         """
-        return int(self._c_object.author_tz_offset)
+        pass
 
     @property
     def committer_timezone(self) -> int:
@@ -656,7 +504,7 @@ class Commit:
 
         :return: int timezone
         """
-        return int(self._c_object.committer_tz_offset)
+        pass
 
     @property
     def msg(self) -> str:
@@ -665,7 +513,7 @@ class Commit:
 
         :return: str commit_message
         """
-        return str(self._c_object.message.strip())
+        pass
 
     @property
     def parents(self) -> List[str]:
@@ -674,10 +522,7 @@ class Commit:
 
         :return: List[str] parents
         """
-        parents = []
-        for p in self._c_object.parents:
-            parents.append(p.hexsha)
-        return parents
+        pass
 
     @property
     def merge(self) -> bool:
@@ -686,38 +531,13 @@ class Commit:
 
         :return: bool merge
         """
-        return len(self._c_object.parents) > 1
+        pass
 
     def _stats(self):
-        if self._stats_cache is not None:
-            return self._stats_cache
-
-        if len(self.parents) == 0:
-            text = self._conf.get('git').repo.git.diff_tree(self.hash, "--", numstat=True, root=True)
-            text2 = ""
-            for line in text.splitlines()[1:]:
-                (insertions, deletions, filename) = line.split("\t")
-                text2 += "%s\t%s\t%s\n" % (insertions, deletions, filename)
-            text = text2
-        else:
-            text = self._conf.get('git').repo.git.diff(self._c_object.parents[0].hexsha, self._c_object.hexsha, "--", numstat=True, root=True)
-
-        self._stats_cache = self._list_from_string(text)
-        return self._stats_cache
+        pass
 
     def _list_from_string(self, text: str):
-        total = {"insertions": 0, "deletions": 0, "lines": 0, "files": 0}
-
-        for line in text.splitlines():
-            (raw_insertions, raw_deletions, _) = line.split("\t")
-            insertions = raw_insertions != "-" and int(raw_insertions) or 0
-            deletions = raw_deletions != "-" and int(raw_deletions) or 0
-            total["insertions"] += insertions
-            total["deletions"] += deletions
-            total["lines"] += insertions + deletions
-            total["files"] += 1
-
-        return total
+        pass
 
     @property
     def insertions(self) -> int:
@@ -726,7 +546,7 @@ class Commit:
 
         :return: int insertion lines
         """
-        return self._stats()["insertions"]
+        pass
 
     @property
     def deletions(self) -> int:
@@ -735,7 +555,7 @@ class Commit:
 
         :return: int deletion lines
         """
-        return self._stats()["deletions"]
+        pass
 
     @property
     def lines(self) -> int:
@@ -744,7 +564,7 @@ class Commit:
 
         :return: int insertion + deletion lines
         """
-        return self._stats()["lines"]
+        pass
 
     @property
     def files(self) -> int:
@@ -753,7 +573,7 @@ class Commit:
 
         :return: int modified files number
         """
-        return self._stats()["files"]
+        pass
 
     @property
     def modified_files(self) -> List[ModifiedFile]:
@@ -765,47 +585,10 @@ class Commit:
 
         :return: List[Modification] modifications
         """
-        options = {}
-        if self._conf.get("histogram"):
-            options["histogram"] = True
-
-        if self._conf.get("skip_whitespaces"):
-            options["w"] = True
-
-        if len(self.parents) == 1:
-            # the commit has a parent
-            diff_index: Any = self._c_object.parents[0].diff(
-                other=self._c_object, paths=None, create_patch=True, **options
-            )
-        elif len(self.parents) > 1:
-            # if it's a merge commit, the modified files of the commit are the
-            # conflicts. This because if the file is not in conflict,
-            # pydriller will visit the modification in one of the previous
-            # commits. However, parsing the output of a combined diff (that
-            # returns the list of conflicts) is challenging: so, right now,
-            # I will return an empty array, in the meanwhile I will try to
-            # find a way to parse the output.
-            # c_git = Git(str(self.project_path))
-            # d = c_git.diff_tree("--cc", commit.hexsha, '-r', '--abbrev=40',
-            #                     '--full-index', '-M', '-p', '--no-color')
-            diff_index = []
-        else:
-            # this is the first commit of the repo. Comparing it with git
-            # NULL TREE
-            diff_index = self._c_object.diff(
-                NULL_TREE, paths=None, create_patch=True, **options
-            )
-
-        return self._parse_diff(diff_index)
+        pass
 
     def _parse_diff(self, diff_index: List[Diff]) -> List[ModifiedFile]:
-        modified_files_list = []
-        for diff in diff_index:
-            modified_files_list.append(
-                ModifiedFile(diff=diff)
-            )
-
-        return modified_files_list
+        pass
 
     @property
     def in_main_branch(self) -> bool:
@@ -814,7 +597,7 @@ class Commit:
 
         :return: bool in_main_branch
         """
-        return self._conf.get("main_branch") in self.branches
+        pass
 
     @property
     def branches(self) -> Set[str]:
@@ -823,16 +606,7 @@ class Commit:
 
         :return: set(str) branches
         """
-        c_git = Git(str(self._conf.get("path_to_repo")))
-        branches = set()
-        args = ["--contains", self.hash]
-        if self._conf.get("include_remotes"):
-            args = ["-r"] + args
-        if self._conf.get("include_refs"):
-            args = ["-a"] + args
-        for branch in set(c_git.branch(*args).split("\n")):
-            branches.add(branch.strip().replace("* ", ""))
-        return branches
+        pass
 
     @property
     def dmm_unit_size(self) -> Optional[float]:
@@ -850,7 +624,7 @@ class Commit:
         :return: The DMM value (between 0.0 and 1.0) for method size in this commit,
                  or None if none of the programming languages in the commit are supported.
         """
-        return self._delta_maintainability(DMMProperty.UNIT_SIZE)
+        pass
 
     @property
     def dmm_unit_complexity(self) -> Optional[float]:
@@ -868,7 +642,7 @@ class Commit:
         :return: The DMM value (between 0.0 and 1.0) for method complexity in this commit.
                  or None if none of the programming languages in the commit are supported.
         """
-        return self._delta_maintainability(DMMProperty.UNIT_COMPLEXITY)
+        pass
 
     @property
     def dmm_unit_interfacing(self) -> Optional[float]:
@@ -886,7 +660,7 @@ class Commit:
         :return: The dmm value (between 0.0 and 1.0) for method interfacing in this commit.
                   or None if none of the programming languages in the commit are supported.
         """
-        return self._delta_maintainability(DMMProperty.UNIT_INTERFACING)
+        pass
 
     def _delta_maintainability(self, dmm_prop: DMMProperty) -> Optional[float]:
         """
@@ -898,11 +672,7 @@ class Commit:
         :param dmm_prop: Property indicating the type of risk
         :return: dmm value (between 0.0 and 1.0) for the property represented in the property.
         """
-        delta_profile = self._delta_risk_profile(dmm_prop)
-        if delta_profile:
-            (delta_low, delta_high) = delta_profile
-            return self._good_change_proportion(delta_low, delta_high)
-        return None
+        pass
 
     def _delta_risk_profile(
             self, dmm_prop: DMMProperty
@@ -915,18 +685,7 @@ class Commit:
         :param dmm_prop: Property indicating the type of risk
         :return: total delta risk profile for this commit.
         """
-        supported_modifications = [
-            mod for mod in self.modified_files if mod.language_supported
-        ]
-        if supported_modifications:
-            deltas = [
-                mod._delta_risk_profile(dmm_prop)
-                for mod in supported_modifications
-            ]
-            delta_low = sum(dlow for (dlow, dhigh) in deltas)
-            delta_high = sum(dhigh for (dlow, dhigh) in deltas)
-            return delta_low, delta_high
-        return None
+        pass
 
     @staticmethod
     def _good_change_proportion(
@@ -939,27 +698,7 @@ class Commit:
 
         :return: proportion of good change in total change, or None if the total change is zero.
         """
-        bad_change, good_change = (0, 0)
-
-        if low_risk_delta >= 0:
-            good_change = low_risk_delta
-        else:
-            bad_change = abs(low_risk_delta)
-        if high_risk_delta >= 0:
-            bad_change += high_risk_delta
-        else:
-            good_change += abs(high_risk_delta)
-
-        assert good_change >= 0 and bad_change >= 0
-
-        total_change = good_change + bad_change
-        if total_change == 0:
-            proportion = None
-        else:
-            proportion = good_change / total_change
-            assert 0.0 <= proportion <= 1.0
-
-        return proportion
+        pass
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Commit):

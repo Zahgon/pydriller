@@ -39,31 +39,7 @@ class CodeChurn(ProcessMetric):
         self._initialize()
 
     def _initialize(self):
-        renamed_files = {}
-        self.files = {}
-
-        for commit in self.repo_miner.traverse_commits():
-
-            for modified_file in commit.modified_files:
-
-                filepath = renamed_files.get(modified_file.new_path, modified_file.new_path)
-
-                if modified_file.change_type == ModificationType.RENAME:
-                    renamed_files[modified_file.old_path] = filepath
-
-                if self.ignore_added_files and modified_file.change_type == ModificationType.ADD:
-                    continue
-
-                added_lines = modified_file.added_lines
-                deleted_lines = modified_file.deleted_lines
-                self.added_removed_lines[filepath] = (added_lines, deleted_lines)
-
-                if self.add_deleted_lines_to_churn:
-                    churn = added_lines + deleted_lines
-                else:
-                    churn = added_lines - deleted_lines
-
-                self.files.setdefault(filepath, []).append(churn)
+        pass
 
     def get_added_and_removed_lines(self) -> Dict[str, Tuple[int, int]]:
         """
@@ -71,7 +47,7 @@ class CodeChurn(ProcessMetric):
 
         :return: A dictionary where the key is the file path, and the value is a tuple (added_lines, removed_lines).
         """
-        return self.added_removed_lines
+        pass
 
     def count(self):
         """
@@ -79,11 +55,7 @@ class CodeChurn(ProcessMetric):
 
         :return: int number of churns
         """
-        count = {}
-        for path, churns in self.files.items():
-            count[path] = sum(churns)
-
-        return count
+        pass
 
     def max(self):
         """
@@ -91,11 +63,7 @@ class CodeChurn(ProcessMetric):
 
         :return: int max number of churns
         """
-        max_count = {}
-        for path, churns in self.files.items():
-            max_count[path] = max(churns)
-
-        return max_count
+        pass
 
     def avg(self):
         """
@@ -103,8 +71,4 @@ class CodeChurn(ProcessMetric):
 
         :return: int avg number of churns rounded off to the nearest integer
         """
-        avg_count = {}
-        for path, churns in self.files.items():
-            avg_count[path] = round(statistics.mean(churns))
-
-        return avg_count
+        pass

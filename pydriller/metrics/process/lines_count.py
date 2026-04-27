@@ -46,22 +46,7 @@ class LinesCount(ProcessMetric):
 
     def _initialize(self):
 
-        self.lines_added = {}
-        self.lines_removed = {}
-
-        renamed_files = {}
-        for commit in self.repo_miner.traverse_commits():
-
-            for modified_file in commit.modified_files:
-
-                filepath = renamed_files.get(modified_file.new_path,
-                                             modified_file.new_path)
-
-                if modified_file.change_type == ModificationType.RENAME:
-                    renamed_files[modified_file.old_path] = filepath
-
-                self.lines_added.setdefault(filepath, []).append(modified_file.added_lines)
-                self.lines_removed.setdefault(filepath, []).append(modified_file.deleted_lines)
+        pass
 
     def count(self):
         """
@@ -69,15 +54,7 @@ class LinesCount(ProcessMetric):
 
         :return: int lines added + lines removed
         """
-        count = {}
-
-        for path, lines in self.lines_added.items():
-            count[path] = count.get(path, 0) + sum(lines)
-
-        for path, lines in self.lines_removed.items():
-            count[path] = count.get(path, 0) + sum(lines)
-
-        return count
+        pass
 
     def count_added(self):
         """
@@ -85,11 +62,7 @@ class LinesCount(ProcessMetric):
 
         :return: int lines added
         """
-        count = {}
-        for path, lines in self.lines_added.items():
-            count[path] = sum(lines)
-
-        return count
+        pass
 
     def max_added(self):
         """
@@ -97,11 +70,7 @@ class LinesCount(ProcessMetric):
 
         :return: int max number of lines added
         """
-        maximum = {}
-        for path, lines in self.lines_added.items():
-            maximum[path] = max(lines)
-
-        return maximum
+        pass
 
     def avg_added(self):
         """
@@ -109,11 +78,7 @@ class LinesCount(ProcessMetric):
 
         :return: int avg number of lines rounded off to the nearest integer
         """
-        avg = {}
-        for path, lines in self.lines_added.items():
-            avg[path] = round(statistics.mean(lines))
-
-        return avg
+        pass
 
     def count_removed(self):
         """
@@ -121,11 +86,7 @@ class LinesCount(ProcessMetric):
 
         :return: int lines removed
         """
-        count = {}
-        for path, lines in self.lines_removed.items():
-            count[path] = sum(lines)
-
-        return count
+        pass
 
     def max_removed(self):
         """
@@ -133,11 +94,7 @@ class LinesCount(ProcessMetric):
 
         :return: int max number of lines removed
         """
-        maximum = {}
-        for path, lines in self.lines_removed.items():
-            maximum[path] = max(lines)
-
-        return maximum
+        pass
 
     def avg_removed(self):
         """
@@ -145,8 +102,4 @@ class LinesCount(ProcessMetric):
 
         :return: int rounded off to the nearest integer
         """
-        avg = {}
-        for path, lines in self.lines_removed.items():
-            avg[path] = round(statistics.mean(lines))
-
-        return avg
+        pass

@@ -13,18 +13,4 @@ class CommitsCount(ProcessMetric):
     """
 
     def count(self):
-        files = {}
-        renamed_files = {}  # To keep track of renamed files
-
-        for commit in self.repo_miner.traverse_commits():
-
-            for modified_file in commit.modified_files:
-
-                filepath = renamed_files.get(modified_file.new_path,
-                                             modified_file.new_path)
-                if modified_file.change_type == ModificationType.RENAME:
-                    renamed_files[modified_file.old_path] = filepath
-
-                files[filepath] = files.get(filepath, 0) + 1
-
-        return files
+        pass

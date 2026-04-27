@@ -50,4 +50,4 @@ class ProcessMetric:
         """
         Implement the main functionality of the metric
         """
-        return 0
+        pass

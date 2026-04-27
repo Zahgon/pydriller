@@ -67,12 +67,7 @@ class Git:
 
         :return: Repo
         """
-        if self._repo is None:
-            self._open_repository()
-
-        assert self._repo
-
-        return self._repo
+        pass
 
     def clear(self):
         """
@@ -80,23 +75,13 @@ class Git:
         This holds especially for Windows users. Hence, we need to clear the
         cache manually.
         """
-        if self._repo:
-            self.repo.git.clear_cache()
+        pass
 
     def _open_repository(self):
-        self._repo = Repo(str(self.path))
-        self._repo.config_writer().set_value("blame", "markUnblamableLines", "true").release()
-        if self._conf.get("main_branch") is None:
-            self._discover_main_branch(self._repo)
+        pass
 
     def _discover_main_branch(self, repo):
-        try:
-            self._conf.set_value("main_branch", repo.active_branch.name)
-        except TypeError:
-            # The current HEAD is detached. In this case, it doesn't belong to
-            # any branch, hence we return an empty string
-            logger.info("HEAD is a detached symbolic reference, setting main branch to empty string")
-            self._conf.set_value("main_branch", '')
+        pass
 
     def get_head(self) -> Commit:
         """
@@ -104,8 +89,7 @@ class Git:
 
         :return: Commit of the head commit
         """
-        head_commit = self.repo.head.commit
-        return Commit(head_commit, self._conf)
+        pass
 
     def get_list_commits(self, rev='HEAD', **kwargs) -> Generator[Commit, None, None]:
         """
@@ -114,18 +98,7 @@ class Git:
         :return: Generator[Commit], the generator of all the commits in the
             repo
         """
-        # If not specified otherwise, analyze the repository in reversed order
-        if 'reverse' not in kwargs:
-            kwargs['reverse'] = True
-
-        try:
-            for commit in self.repo.iter_commits(rev=rev, **kwargs):
-                yield self.get_commit_from_gitpython(commit)
-        except GitCommandError as gce:
-            if "fatal: bad revision 'HEAD'" in str(gce):
-                logger.debug(f"Could not find commits in {self.path}")
-            else:
-                raise Exception(f"Error while getting commits: {gce}")
+        pass
 
     def get_commit(self, commit_id: str) -> Commit:
         """
@@ -134,8 +107,7 @@ class Git:
         :param str commit_id: hash of the commit to analyze
         :return: Commit
         """
-        gp_commit = self.repo.commit(commit_id)
-        return Commit(gp_commit, self._conf)
+        pass
 
     def get_commit_from_gitpython(self, commit: GitCommit) -> Commit:
         """
@@ -146,7 +118,7 @@ class Git:
         :param GitCommit commit: GitPython commit
         :return: Commit commit: PyDriller commit
         """
-        return Commit(commit, self._conf)
+        pass
 
     def checkout(self, _hash: str) -> None:
         """
@@ -156,7 +128,7 @@ class Git:
 
         :param _hash: commit hash to checkout
         """
-        self.repo.git.checkout('-f', _hash)
+        pass
 
     def files(self) -> List[str]:
         """
@@ -164,13 +136,7 @@ class Git:
 
         :return: List[str], the list of the files
         """
-        _all = []
-        for path, _, files in os.walk(str(self.path)):
-            if '.git' in path:
-                continue
-            for name in files:
-                _all.append(os.path.join(path, name))
-        return _all
+        pass
 
     def reset(self) -> None:
         """
@@ -179,7 +145,7 @@ class Git:
         local changes (-f option).
 
         """
-        self.repo.git.checkout('-f', self._conf.get("main_branch"))
+        pass
 
     def total_commits(self) -> int:
         """
@@ -187,7 +153,7 @@ class Git:
 
         :return: the total number of commits
         """
-        return len(list(self.get_list_commits()))
+        pass
 
     def get_commit_from_tag(self, tag: str) -> Commit:
         """
@@ -196,12 +162,7 @@ class Git:
         :param str tag: the tag
         :return: Commit commit: the commit the tag referred to
         """
-        try:
-            selected_tag = self.repo.tags[tag]
-            return self.get_commit(selected_tag.commit.hexsha)
-        except (IndexError, AttributeError):
-            logger.debug(f"Tag {tag} not found")
-            raise
+        pass
 
     def get_tagged_commits(self):
         """
@@ -209,11 +170,7 @@ class Git:
 
         :return: list of tagged commits (can be empty if there are no tags)
         """
-        tags = []
-        for tag in self.repo.tags:
-            if tag.commit:
-                tags.append(tag.commit.hexsha)
-        return tags
+        pass
 
     def get_commits_last_modified_lines(self, commit: Commit,
                                         modification: Optional[ModifiedFile] = None,
@@ -242,81 +199,26 @@ class Git:
         :return: Dict commits: a dictionary having as keys the files of the commit,
                  and as values the commits that last touched those files.
         """
-        if modification is not None:
-            modifications = [modification]
-        else:
-            modifications = commit.modified_files
-
-        return self._calculate_last_commits(commit, modifications,
-                                            hashes_to_ignore_path)
+        pass
 
     def diff(self, from_commit_id: str, to_commit_id: str) -> List[ModifiedFile]:
-        from_commit = self.repo.commit(from_commit_id)
-        to_commit = self.repo.commit(to_commit_id)
-        diff_index = from_commit.diff(
-            other=to_commit,
-            paths=None,
-            create_patch=True)
-
-        modified_files_list = [ModifiedFile(diff=diff) for diff in diff_index]
-        return modified_files_list
+        pass
 
     def _calculate_last_commits(self, commit: Commit,
                                 modifications: List[ModifiedFile],
                                 hashes_to_ignore_path: Optional[str] = None) \
             -> Dict[str, Set[str]]:
 
-        commits: Dict[str, Set[str]] = {}
-
-        for mod in modifications:
-            path = mod.new_path
-            if mod.change_type == ModificationType.RENAME or mod.change_type == ModificationType.DELETE:
-                path = mod.old_path
-
-            deleted_lines = mod.diff_parsed['deleted']
-
-            assert path is not None, "We could not find the path to the file"
-
-            try:
-                blame = self._get_blame(commit.hash, path, hashes_to_ignore_path)
-                for num_line, line in deleted_lines:
-                    if not self._useless_line(line.strip()):
-                        buggy_commit = blame[num_line - 1].split(' ')[0].replace('^', '')
-
-                        # Skip unblamable lines.
-                        if buggy_commit.startswith("*"):
-                            continue
-
-                        if mod.change_type == ModificationType.RENAME:
-                            path = mod.new_path
-
-                        assert path is not None, "We could not find the path to the file"
-                        commits.setdefault(path, set()).add(self.get_commit(buggy_commit).hash)
-            except GitCommandError:
-                logger.debug(f"Could not found file {mod.filename} in commit {commit.hash}. Probably a double rename!")
-
-        return commits
+        pass
 
     def _get_blame(self, commit_hash: str, path: str, hashes_to_ignore_path: Optional[str] = None):
-        args = ['-w', commit_hash + '^']
-        if hashes_to_ignore_path is not None:
-            if self.repo.git.version_info >= (2, 23):
-                args += ["--ignore-revs-file", hashes_to_ignore_path]
-            else:
-                logger.info("'--ignore-revs-file' is only available from git v2.23")
-        return self.repo.git.blame(*args, '--', path).split('\n')
+        pass
 
     @staticmethod
     def _useless_line(line: str):
         # this covers comments in Java and Python, as well as empty lines.
         # More have to be added!
-        return not line or \
-               line.startswith('//') or \
-               line.startswith('#') or \
-               line.startswith("/*") or \
-               line.startswith("'''") or \
-               line.startswith('"""') or \
-               line.startswith("*")
+        pass
 
     def get_commits_modified_file(self, filepath: str, include_deleted_files=False) -> List[str]:
         """
@@ -327,18 +229,7 @@ class Git:
         :param bool include_deleted_files: if True, include commits that modifies a deleted file
         :return: the list of commits' hash
         """
-        path = str(Path(filepath))
-
-        commits = []
-        try:
-            if include_deleted_files:
-                commits = self.repo.git.log("--follow", "--format=%H", "--", path).split('\n')
-            else:
-                commits = self.repo.git.log("--follow", "--format=%H", path).split('\n')
-        except GitCommandError:
-            logger.debug(f"Could not find information of file {path}")
-
-        return commits
+        pass
 
     def __del__(self):
         self.clear()

@@ -47,7 +47,7 @@ class Conf:
         :param key: configuration (i.e., start date)
         :param value: value
         """
-        self._options[key] = value
+        pass
 
     def get(self, key: str) -> Any:
         """
@@ -56,7 +56,7 @@ class Conf:
         :param key: configuration name
         :return: value of the configuration, None if not present
         """
-        return self._options.get(key, None)
+        pass
 
     @staticmethod
     def _sanity_check_repos(path_to_repo: Union[str, List[str]]) -> None:
@@ -66,128 +66,47 @@ class Conf:
         @param path_to_repo: path to the repo as provided by the user.
         @return:
         """
-        if not isinstance(path_to_repo, str) and not isinstance(path_to_repo, list):
-            raise Exception("The path to the repo has to be of type 'string' or 'list of strings'!")
+        pass
 
     def _check_only_one_from_commit(self) -> None:
-        if not self.only_one_filter([self.get('since'),
-                                     self.get('since_as_filter'),
-                                     self.get('from_commit'),
-                                     self.get('from_tag')]):
-            raise Exception('You can only specify one filter between since, since_as_filter, from_tag and from_commit')
+        pass
 
     def _check_only_one_to_commit(self) -> None:
-        if not self.only_one_filter([self.get('to'),
-                                     self.get('to_commit'),
-                                     self.get('to_tag')]):
-            raise Exception('You can only specify one between to, to_tag and to_commit')
+        pass
 
     def sanity_check_filters(self) -> None:
         """
         Check if the values passed by the user are correct.
 
         """
-        self._check_correct_filters_order()
-        self._check_only_one_from_commit()
-        self._check_only_one_to_commit()
-        self._check_timezones()
-
-        # Check if from_commit and to_commit point to the same commit, in which case
-        # we remove both filters and use the "single" filter instead. This prevents
-        # errors with dates.
-        if self.get("from_commit") and self.get("to_commit") and self.get("from_commit") == self.get("to_commit"):
-            logger.warning("You should not point from_commit and to_commit to the same "
-                           "commit, but use the 'single' filter instead.")
-            single = self.get("to_commit")
-            self.set_value("from_commit", None)
-            self.set_value("to_commit", None)
-            self.set_value("single", single)
-
-        if self.get('single') is not None:
-            if any([self.get('since'),
-                    self.get('since_as_filter'),
-                    self.get('to'),
-                    self.get('from_commit'),
-                    self.get('to_commit'),
-                    self.get('from_tag'),
-                    self.get('to_tag')]):
-                raise Exception('You can not specify a single commit with '
-                                'other filters')
-            try:
-                self.set_value('single', self.get("git").get_commit(self.get('single')).hash)
-            except BadName:
-                raise Exception("The commit {} defined in "
-                                "the 'single' filtered does "
-                                "not exist".format(self.get('single')))
+        pass
 
     def _check_correct_filters_order(self) -> None:
         """
         Check that from_commit comes before to_commit
         """
-        if self.get('from_commit') and self.get('to_commit'):
-            chronological_order = self._is_commit_before(
-                self.get('git').get_commit(self.get('from_commit')),
-                self.get('git').get_commit(self.get('to_commit')))
-
-            if not chronological_order:
-                self._swap_commit_fiters()
+        pass
 
     def _swap_commit_fiters(self) -> None:
         # reverse from and to commit
-        from_commit = self.get('from_commit')
-        to_commit = self.get('to_commit')
-        self.set_value('from_commit', to_commit)
-        self.set_value('to_commit', from_commit)
+        pass
 
     @staticmethod
     def _is_commit_before(commit_before: Commit, commit_after: Commit) -> bool:
-        if commit_before.committer_date < commit_after.committer_date:
-            return True
-        if commit_before.committer_date == commit_after.committer_date and \
-                commit_before.author_date < commit_after.author_date:
-            return True
-        return False
+        pass
 
     def get_starting_commit(self) -> Optional[List[str]]:
         """
         Get the starting commit from the 'from_commit' or 'from_tag'
         filter.
         """
-        from_tag = self.get('from_tag')
-        from_commit = self.get('from_commit')
-        if from_tag is not None:
-            tagged_commit = self.get("git").get_commit_from_tag(from_tag)
-            from_commit = tagged_commit.hash
-        if from_commit is not None:
-            try:
-                commit = self.get("git").get_commit(from_commit)
-                if len(commit.parents) == 0:
-                    return [f'--ancestry-path={commit.hash}']
-                elif len(commit.parents) == 1:
-                    return [f'--ancestry-path={commit.hash}', '^' + commit.hash + '^']
-                else:
-                    return [f'--ancestry-path={commit.hash}'] + ['^' + x for x in commit.parents]
-            except Exception:
-                raise Exception("The commit {} defined in the 'from_tag' or 'from_commit' filter does "
-                                "not exist".format(self.get('from_commit')))
-        return None
+        pass
 
     def get_ending_commit(self) -> Optional[str]:
         """
         Get the ending commit from the 'to', 'to_commit' or 'to_tag' filter.
         """
-        to_tag = self.get('to_tag')
-        to_commit = self.get('to_commit')
-        if to_tag is not None:
-            tagged_commit = self.get("git").get_commit_from_tag(to_tag)
-            to_commit = tagged_commit.hash
-        if to_commit is not None:
-            try:
-                return self.get("git").get_commit(to_commit).hash
-            except Exception:
-                raise Exception("The commit {} defined in the 'to_tag' or 'to_commit' filter does "
-                                "not exist".format(self.get('to_commit')))
-        return None
+        pass
 
     @staticmethod
     def only_one_filter(arr: List[Any]) -> bool:
@@ -197,7 +116,7 @@ class Conf:
         :param arr: iterable object
         :return:
         """
-        return len([x for x in arr if x is not None]) <= 1
+        pass
 
     def build_args(self) -> Tuple[Union[str, List[str]], Dict[str, Any]]:
         """
@@ -205,69 +124,7 @@ class Conf:
 
         :return:
         """
-        single: str = self.get('single')
-        since = self.get('since')
-        since_as_filter = self.get('since_as_filter')
-        until = self.get('to')
-        from_commit = self.get_starting_commit()
-        to_commit = self.get_ending_commit()
-        include_refs = self.get('include_refs')
-        remotes = self.get('include_remotes')
-        branch = self.get('only_in_branch')
-        authors = self.get('only_authors')
-        order = self.get('order')
-        rev: Union[List[str], str] = []
-        kwargs = {}
-
-        if single is not None:
-            rev = [single, '-n', '1']
-        elif from_commit is not None or to_commit is not None:
-            if from_commit is not None and to_commit is not None:
-                rev.extend(from_commit)
-                rev.append(to_commit)
-            elif from_commit is not None:
-                rev.extend(from_commit)
-                rev.append('HEAD')
-            else:
-                rev = to_commit
-        elif branch is not None:
-            rev = branch
-        else:
-            rev = 'HEAD'
-
-        if self.get('only_no_merge'):
-            kwargs['no-merges'] = True
-
-        if not order:
-            kwargs['reverse'] = True
-        elif order == 'reverse':
-            kwargs['reverse'] = False
-        elif order == 'date-order':
-            kwargs['date-order'] = True
-        elif order == 'author-date-order':
-            kwargs['author-date-order'] = True
-        elif order == 'topo-order':
-            kwargs['topo-order'] = True
-
-        if include_refs is not None:
-            kwargs['all'] = include_refs
-
-        if remotes is not None:
-            kwargs['remotes'] = remotes
-
-        if authors is not None:
-            kwargs['author'] = authors
-
-        if since is not None:
-            kwargs['since'] = since
-
-        if since_as_filter is not None:
-            kwargs['since_as_filter'] = since_as_filter
-
-        if until is not None:
-            kwargs['until'] = until
-
-        return rev, kwargs
+        pass
 
     def is_commit_filtered(self, commit: Commit):
         # pylint: disable=too-many-branches,too-many-return-statements
@@ -278,37 +135,14 @@ class Conf:
         :param Commit commit: Commit to check
         :return:
         """
-        if self.get('only_modifications_with_file_types') is not None:
-            if not self._has_modification_with_file_type(commit):
-                logger.debug('Commit filtered for modification types')
-                return True
-        if self.get('only_commits') is not None and commit.hash not in self.get('only_commits'):
-            logger.debug("Commit filtered because it is not one of the specified commits")
-            return True
-        if self.get('filepath_commits') is not None and commit.hash not in self.get('filepath_commits'):
-            logger.debug("Commit filtered because it did not modify the specified file")
-            return True
-        if self.get('tagged_commits') is not None and commit.hash not in self.get('tagged_commits'):
-            logger.debug("Commit filtered because it is not tagged")
-            return True
-        return False
+        pass
 
     def _has_modification_with_file_type(self, commit: Commit) -> bool:
-        for mod in commit.modified_files:
-            if mod.filename.endswith(tuple(self.get('only_modifications_with_file_types'))):
-                return True
-        return False
+        pass
 
     def _check_timezones(self):
-        if self.get('since') is not None:
-            self.set_value('since', self._replace_timezone(self.get('since')))
-        if self.get('since_as_filter') is not None:
-            self.set_value('since_as_filter', self._replace_timezone(self.get('since_as_filter')))
-        if self.get('to') is not None:
-            self.set_value('to', self._replace_timezone(self.get('to')))
+        pass
 
     @staticmethod
     def _replace_timezone(dt: datetime) -> datetime:
-        if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
-            dt = dt.replace(tzinfo=pytz.utc)
-        return dt
+        pass

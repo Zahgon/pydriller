@@ -153,103 +153,27 @@ class Repository:
 
     @staticmethod
     def _is_remote(repo: str) -> bool:
-        return repo.startswith(("git@", "https://", "http://", "git://"))
+        pass
 
     def _clone_remote_repo(self, tmp_folder: str, repo: str) -> str:
-        repo_folder = os.path.join(tmp_folder, self._get_repo_name_from_url(repo))
-        if os.path.isdir(repo_folder):
-            logger.info(f"Reusing folder {repo_folder} for {repo}")
-        else:
-            logger.info(f"Cloning {repo} in temporary folder {repo_folder}")
-            Repo.clone_from(url=repo, to_path=repo_folder)
-
-        return repo_folder
+        pass
 
     def _clone_folder(self) -> str:
-        if self._conf.get('clone_repo_to'):
-            clone_folder = str(Path(self._conf.get('clone_repo_to')))
-            if not os.path.isdir(clone_folder):
-                raise Exception("Not a directory: {0}".format(clone_folder))
-        else:
-            # Save the temporary directory so we can clean it up later
-            self._tmp_dir = tempfile.TemporaryDirectory()
-            clone_folder = self._tmp_dir.name
-        return clone_folder
+        pass
 
     @contextmanager
     def _prep_repo(self, path_repo: str) -> Generator[Git, None, None]:
-        local_path_repo = path_repo
-        if self._is_remote(path_repo):
-            local_path_repo = self._clone_remote_repo(self._clone_folder(), path_repo)
-        local_path_repo = str(Path(local_path_repo).expanduser().resolve())
-
-        # when multiple repos are given in input, this variable will serve as a reminder
-        # of which one we are currently analyzing
-        self._conf.set_value('path_to_repo', local_path_repo)
-
-        self.git = Git(local_path_repo, self._conf)
-        # saving the Git object for further use
-        self._conf.set_value("git", self.git)
-
-        # checking that the filters are set correctly
-        self._conf.sanity_check_filters()
-        yield self.git
-
-        # cleaning, this is necessary since GitPython issues on memory leaks
-        self._conf.set_value("git", None)
-        self.git.clear()
-        self.git = None  # type: ignore
-
-        # delete the temporary directory if created
-        if self._is_remote(path_repo) and self._cleanup is True:
-            assert self._tmp_dir is not None
-            try:
-                self._tmp_dir.cleanup()
-            except (PermissionError, OSError):
-                # On Windows there might be cleanup errors.
-                # Manually remove files
-                shutil.rmtree(self._tmp_dir.name, ignore_errors=True)
+        pass
 
     def traverse_commits(self) -> Generator[Commit, None, None]:
         """
         Analyze all the specified commits (all of them by default), returning
         a generator of commits.
         """
-        for path_repo in self._conf.get('path_to_repos'):
-            with self._prep_repo(path_repo=path_repo) as git:
-                logger.info(f'Analyzing git repository in {git.path}')
-
-                # Get the commits that modified the filepath. In this case, we can not use
-                # git rev-list since it doesn't have the option --follow, necessary to follow
-                # the renames. Hence, we manually call git log instead
-                if self._conf.get('filepath') is not None:
-                    self._conf.set_value(
-                        'filepath_commits',
-                        git.get_commits_modified_file(self._conf.get('filepath'),
-                                                      self._conf.get('include_deleted_files'))
-                    )
-
-                # Gets only the commits that are tagged
-                if self._conf.get('only_releases'):
-                    self._conf.set_value('tagged_commits', git.get_tagged_commits())
-
-                # Build the arguments to pass to git rev-list.
-                rev, kwargs = self._conf.build_args()
-
-                with concurrent.futures.ThreadPoolExecutor(max_workers=self._conf.get("num_workers")) as executor:
-                    for job in executor.map(self._iter_commits, git.get_list_commits(rev, **kwargs)):
-
-                        for commit in job:
-                            yield commit
+        pass
 
     def _iter_commits(self, commit: Commit) -> Generator[Commit, None, None]:
-        logger.info(f'Commit #{commit.hash} in {commit.committer_date} from {commit.author.name}')
-
-        if self._conf.is_commit_filtered(commit):
-            logger.info(f'Commit #{commit.hash} filtered')
-            return
-
-        yield commit
+        pass
 
     @staticmethod
     def _split_in_chunks(full_list: List[Commit], num_workers: int) -> List[List[Commit]]:
@@ -260,29 +184,11 @@ class Repository:
         :param int num_workers: number of workers (i.e., threads)
         :return: Chunks of commits
         """
-        num_chunks = math.ceil(len(full_list) / num_workers)
-        chunks = []
-        for i in range(0, len(full_list), num_chunks):
-            chunks.append(full_list[i:i + num_chunks])
-
-        return chunks
+        pass
 
     @staticmethod
     def _get_repo_name_from_url(url: str) -> str:
-        last_slash_index = url.rfind("/")
-        len_url = len(url)
-
-        if last_slash_index < 0 or last_slash_index >= len_url - 1:
-            raise MalformedUrl(f"Badly formatted url {url}")
-
-        last_dot_index = url.rfind(".")
-
-        if url[last_dot_index:] == ".git":
-            last_suffix_index = last_dot_index
-        else:
-            last_suffix_index = len_url
-
-        return url[last_slash_index + 1:last_suffix_index]
+        pass
 
 
 class MalformedUrl(Exception):

@@ -31,49 +31,17 @@ class ContributorsCount(ProcessMetric):
 
     def _initialize(self):
 
-        self.contributors = {}
-        self.minor_contributors = {}
-
-        renamed_files = {}
-
-        for commit in self.repo_miner.traverse_commits():
-
-            for modified_file in commit.modified_files:
-
-                filepath = renamed_files.get(modified_file.new_path,
-                                             modified_file.new_path)
-
-                if modified_file.change_type == ModificationType.RENAME:
-                    renamed_files[modified_file.old_path] = filepath
-
-                author = commit.author.email.strip()
-                lines_authored = modified_file.added_lines + modified_file.deleted_lines
-
-                self.contributors[filepath] = self.contributors.get(filepath, {})
-                self.contributors[filepath][author] = self.contributors[filepath].get(author, 0) + lines_authored
-
-        for path, contributions in list(self.contributors.items()):
-            total = sum(contributions.values())
-            if total == 0:
-                del self.contributors[path]
-            else:
-                contributors_count = len(contributions.values())
-                minor_contributors_count = sum(1
-                                               for v in contributions.values()
-                                               if v/total < .05)
-
-                self.contributors[path] = contributors_count
-                self.minor_contributors[path] = minor_contributors_count
+        pass
 
     def count(self):
         """
         Return the number of contributors who modified a file.
         """
-        return self.contributors
+        pass
 
     def count_minor(self):
         """
         Return the number of contributors that authored less than
         5% of code of a file.
         """
-        return self.minor_contributors
+        pass

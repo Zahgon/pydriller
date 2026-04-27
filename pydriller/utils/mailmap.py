@@ -14,7 +14,7 @@ class DeveloperFactory(ABC):
 class DefaultDeveloperFactory(DeveloperFactory):
 
     def get_developer(self, name: Optional[str] = None, email: Optional[str] = None) -> Developer:
-        return Developer(name, email)
+        pass
 
 
 class MailmapDeveloperFactory(DeveloperFactory):
@@ -34,29 +34,7 @@ class MailmapDeveloperFactory(DeveloperFactory):
         In case anything goes wrong while calling `git-check-mailmap` the method returns the input values for name and
         email. This is inline with the behavior of `git-check-mailmap`, see documentation.
         """
-
-        # In future, once Git version >= 2.47 is installed by most of pydriller users, the call might be refactored to
-        # use the `--mailmap-file` option so that PyDriller users can specify `.mailmap` files outside of repositories
-        # for analysis.
-        result = subprocess.run(
-            ["git", "-C", f"{self._conf.get('path_to_repo')}", "check-mailmap", f"{name} <{email}>"],
-            capture_output=True,
-            text=True
-        )
-
-        if result.stdout:
-            # I believe string splitting is easier to understand than a regular expression here
-            if result.stdout.startswith("<"):
-                map_name = ""
-                map_email = result.stdout[1:-2]
-            else:
-                map_name, map_email = result.stdout.split(" <")
-                map_email = map_email[:-2]
-        elif result.stderr:
-            # This is to make it robust. In case anything goes wrong, go with the knowledge
-            # that we have about the author or committer
-            return str(name), str(email)
-        return map_name, map_email
+        pass
 
     def get_developer(self, name: Optional[str] = None, email: Optional[str] = None) -> Developer:
         """ Get canonical names and emails for a `Developer`.
@@ -68,14 +46,4 @@ class MailmapDeveloperFactory(DeveloperFactory):
         Caching results in a dictionary uses some RAM but I believe there are no repositories with so many authors that
         this will pose an issue on modern computers.
         """
-        developer = Developer(name, email)
-        if cached_developer := self.check_mailmap_cache.get(developer):
-            return cached_developer
-
-        try:
-            map_name, map_email = self._run_check_mailmap(name, email)
-            mapped_developer = Developer(map_name, map_email)
-            self.check_mailmap_cache[developer] = mapped_developer
-            return mapped_developer
-        except Exception:
-            return developer
+        pass
